@@ -1,3 +1,17 @@
+---
+title: Classificador Emails Autou
+emoji: 🦀
+colorFrom: red
+colorTo: purple
+sdk: gradio
+sdk_version: 5.44.1
+app_file: app.py
+pinned: false
+license: mit
+---
+
+Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+
 # autou_automacao_email_ia
 
 Este projeto é um desafio para a vaga na empresa AutoU, com o objetivo de criar uma aplicação web que automatiza a classificação de e-mails usando inteligência artificial. A solução categoriza e-mails como Produtivos ou Improdutivos e sugere respostas automáticas, liberando tempo da equipe para tarefas mais estratégicas.
