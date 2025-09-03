@@ -10,7 +10,7 @@ except Exception as e:
 
 def classify_email(email_content):
     if not classifier:
-        return "Erro", "Modelo de IA não disponível.", ""
+        return "Erro", "", "Modelo de IA não disponível.", ""
     
     critical_keywords = [
         "solicitação", "pedido", "suporte", "atualização", "ajuda", "dúvida", 
@@ -56,12 +56,6 @@ body, .gradio-container {
 h1, h2, h3, label {
     color: #FF9900;
 }
-.gr-button {
-    background: #FF9900 !important;
-    color: #fff !important;
-    border-radius: 8px !important;
-    font-weight: bold;
-}
 #cliente-card, #ia-card {
     background: #fff;
     border-radius: 16px;
@@ -69,10 +63,16 @@ h1, h2, h3, label {
     padding: 24px;
     margin: 8px;
 }
+#botao-enviar button {
+    background: linear-gradient(135deg, #FFB347 0%, #FF9900 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: bold !important;
+}
 """
 
 with gr.Blocks(css=custom_css) as demo:
-    
     with gr.Row():
         # Card da Visão do Cliente
         with gr.Column(scale=3):
@@ -80,13 +80,15 @@ with gr.Blocks(css=custom_css) as demo:
                 gr.Markdown(
                     """
                     <div style="text-align:center; width:100%; margin-bottom:16px;">
+                        <img src="https://gradio.app/assets/img/logo.svg" alt="Gradio Logo" width="60"/>
                         <h1 style="margin-bottom:0;">Fale Conosco</h1>
                     </div>
                     """
                 )           
-                email_input = gr.Textbox(lines=8, label="Digite ou copie aqui sua mensagem que teremos prazer em te responder", placeholder="Digite aqui sua dúvida, pedido ou sugestão...")
-                classify_btn = gr.Button("Enviar")
-                response_out = gr.Textbox(label="Resposta Sugerida", interactive=False)
+                email_input = gr.Textbox(lines=8, label="Digite ou copie aqui abaixo sua mensagem que teremos prazer em te responder", placeholder="Digite sua dúvida, pedido ou sugestão...")
+                with gr.Row(elem_id="botao-enviar"):
+                    classify_btn = gr.Button("Enviar")
+                response_display = gr.Markdown("")
 
         # Card dos Bastidores da IA
         with gr.Column(scale=2):
@@ -102,10 +104,14 @@ with gr.Blocks(css=custom_css) as demo:
                     """)
                 probabilities_out = gr.Textbox(label="", interactive=False)
 
+    def process_and_display(email_content):
+        categoria, resposta, probabilidades = classify_email(email_content)
+        return categoria, gr.Markdown.update(value=f"**Resposta:**<br>{resposta}"), probabilidades
+
     classify_btn.click(
-        classify_email, 
+        process_and_display, 
         inputs=email_input, 
-        outputs=[category_out, response_out, probabilities_out]
+        outputs=[category_out, response_display, probabilities_out]
     )
 
 demo.launch()
