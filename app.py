@@ -9,15 +9,9 @@ except Exception as e:
     classifier = None
 
 def classify_email(email_content):
-    """
-    Classifica o email e sugere uma resposta baseada na categoria.
-    """
     if not classifier:
         return "Erro", "Modelo de IA não disponível.", ""
     
-    # ---------------------------------------------
-    # 1. Verificação de palavras-chave críticas (Regra de Negócio)
-    # ---------------------------------------------
     critical_keywords = [
         "solicitação", "pedido", "suporte", "atualização", "ajuda", "dúvida", 
         "retorno", "problema", "resposta", "preciso de", "necessito de", 
@@ -28,63 +22,90 @@ def classify_email(email_content):
     email_lower = email_content.lower()
     for keyword in critical_keywords:
         if keyword in email_lower:
-            # Novo: Retorna a probabilidade como uma string
             return "PRODUTIVO", "Olá, obrigado pelo seu email. Estamos processando sua solicitação e entraremos em contato em breve com uma atualização.", "Classificação por palavra-chave crítica. Não há análise de IA."
 
-    # ---------------------------------------------
-    # 2. Classificação por IA com análise de probabilidade
-    # ---------------------------------------------
     candidate_labels = ["saudacao", "mensagem de cortesia", "solicitacao"]
-    
     try:
         result = classifier(email_content, candidate_labels=candidate_labels, multi_label=True)
-        
-        # Converte as probabilidades em uma string para exibição
         probabilities_str = ""
         for label, score in zip(result['labels'], result['scores']):
             probabilities_str += f"- {label.capitalize()}: {score:.2f}\n"
-
-        # Encontra o score da categoria 'pedido de acao'
         try:
             action_score = result['scores'][result['labels'].index('solicitacao')]
         except ValueError:
             action_score = 0
-            
-        # Define um limite de probabilidade para ser considerado produtivo
         if action_score > 0.40:
             final_category = "produtivo"
             suggested_response = "Olá, obrigado pelo seu email. Estamos processando sua solicitação e entraremos em contato em breve com uma atualização."
         else:
             final_category = "improdutivo"
             suggested_response = "Olá, obrigado pela sua mensagem! Tenha um ótimo dia."
-        
         return final_category.upper(), suggested_response, probabilities_str
-    
     except Exception as e:
         print(f"Erro na classificação: {e}")
         return "Erro", "Ocorreu um erro ao processar o email.", ""
 
-# -----------------
-# Interface Gradio
-# -----------------
-iface = gr.Interface(
-    fn=classify_email, 
-    inputs=gr.Textbox(lines=10, label="Cole o conteúdo do email aqui:"), 
-    outputs=[
-        gr.Textbox(label="Categoria:"), 
-        gr.Textbox(label="Resposta Sugerida:"),
-        gr.Textbox(label="Probabilidades da IA:", interactive=False) # Novo campo
-    ],
-    title="Classificador de Emails com IA",
-    description="Uma solução que automatiza a classificação de emails e sugere respostas, liberando tempo da equipe.",
-    examples=[
-        ["Olá, qual o status da minha solicitação?"],
-        ["Feliz Natal! Desejo um ótimo ano novo para toda a equipe."],
-        ["Obrigado por sua ajuda, resolvemos o problema."],
-        ["Bom dia, tudo bem com vocês?"],
-        ["Gostaria de saber se o problema foi corrigido."]
-    ]
-)
+# CSS personalizado
+custom_css = """
+body, .gradio-container {
+    background: linear-gradient(135deg, #FFB347 0%, #FF9900 100%);
+}
+.gradio-container {
+    min-height: 100vh;
+}
+h1, h2, h3, label {
+    color: #FF9900;
+}
+.gr-button {
+    background: #FF9900 !important;
+    color: #fff !important;
+    border-radius: 8px !important;
+    font-weight: bold;
+}
+#cliente-card, #ia-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(255,153,0,0.15);
+    padding: 24px;
+    margin: 8px;
+}
+"""
 
-# Lançando a aplicação Gradio
-iface.launch()
+with gr.Blocks(css=custom_css) as demo:
+    
+    with gr.Row():
+        # Card da Visão do Cliente
+        with gr.Column(scale=3):
+            with gr.Group(elem_id="cliente-card"):
+                gr.Markdown(
+                    """
+                    <div style="text-align:center; width:100%; margin-bottom:16px;">
+                        <h1 style="margin-bottom:0;">Fale Conosco</h1>
+                    </div>
+                    """
+                )           
+                email_input = gr.Textbox(lines=8, label="Digite ou copie aqui sua mensagem que teremos prazer em te responder", placeholder="Digite aqui sua dúvida, pedido ou sugestão...")
+                classify_btn = gr.Button("Enviar")
+                response_out = gr.Textbox(label="Resposta Sugerida", interactive=False)
+
+        # Card dos Bastidores da IA
+        with gr.Column(scale=2):
+            with gr.Group(elem_id="ia-card"):
+                gr.Markdown("### Bastidores da IA")
+                category_out = gr.Textbox(label="Categoria", interactive=False)
+                gr.Markdown(
+                    """
+                    <b>Palavras-chave críticas:</b><br>
+                    <span style="color:#FF9900;">solicitação, pedido, suporte, atualização, ajuda, dúvida, retorno, problema, resposta, preciso de, necessito de, gostaria de, qual o status, extrato, documento, fatura, senha, acesso, conta, cancelar, reembolso, troca</span>
+                    <br><br>
+                    <b>Probabilidades da IA:</b>
+                    """)
+                probabilities_out = gr.Textbox(label="", interactive=False)
+
+    classify_btn.click(
+        classify_email, 
+        inputs=email_input, 
+        outputs=[category_out, response_out, probabilities_out]
+    )
+
+demo.launch()
